@@ -8,6 +8,7 @@ import { AuthTokenResponse, IJwtPayload } from '../types/data';
 import { BaseException } from '../errors/api-error';
 import httpStatus from 'http-status';
 import ERRORS from '../constants/errors';
+import { userService } from '.';
 /**
  * Generate a token
  * @param {GenerateTokenDto} Generate token dto
@@ -90,19 +91,71 @@ const generateAuthTokens = async (userId: number): Promise<AuthTokenResponse> =>
  * @returns {Promise<Token>} Token
  */
 const verifyToken = async (token: string, type: TokenType): Promise<Token> => {
-  const payload = jwt.verify(token, envConfig.jwt.secret);
-  const userId = Number(payload.sub);
-  const tokenData = await prisma.token.findFirst({
-    where: {
-      token,
-      type,
-      userId,
-    },
-  });
-  if (!tokenData) {
+  try {
+    const payload = jwt.verify(token, envConfig.jwt.secret);
+    const userId = Number(payload.sub);
+    const tokenData = await prisma.token.findFirst({
+      where: {
+        token,
+        type,
+        userId,
+      },
+    });
+    if (!tokenData) {
+      throw new BaseException(httpStatus.UNAUTHORIZED, ERRORS.COMMON.UNAUTHORIZED);
+    }
+    return tokenData;
+  } catch (error) {
     throw new BaseException(httpStatus.UNAUTHORIZED, ERRORS.COMMON.UNAUTHORIZED);
   }
-  return tokenData;
+};
+
+/**
+ * Generate forgot password token
+ * @param {string} email
+ * @returns {Promise<string>} token
+ */
+const generateForgotPasswordToken = async (email: string): Promise<string> => {
+  const user = await userService.getUserByEmail(email);
+  if (!user) {
+    throw new BaseException(httpStatus.BAD_REQUEST, ERRORS.AUTH.EMAIL_NOT_FOUND);
+  }
+  const expires = moment().add(envConfig.jwt.resetPasswordExpirationMinutes, 'minutes');
+  const forgotPasswordToken = generateToken({
+    userId: user.id,
+    expires,
+    type: TokenType.PASSWORD_RESET,
+    secret: envConfig.jwt.secret,
+  });
+  await saveToken({
+    token: forgotPasswordToken,
+    userId: user.id as number,
+    expires,
+    type: TokenType.PASSWORD_RESET,
+  });
+  return forgotPasswordToken;
+};
+
+/**
+ * Generate verify email token
+ * @param {User} user data
+ * @returns {Promise<string>} token
+ */
+const generateVerifyEmailToken = async (user: { id: number }): Promise<string> => {
+  const expires = moment().add(envConfig.jwt.verifyEmailExpirationMinutes, 'minutes');
+  const verifyEmailToken = generateToken({
+    userId: user.id,
+    expires,
+    type: TokenType.EMAIL_VERIFICATION,
+    secret: envConfig.jwt.secret,
+  });
+  await saveToken({
+    token: verifyEmailToken,
+    userId: user.id,
+    expires,
+    type: TokenType.EMAIL_VERIFICATION,
+  });
+  return verifyEmailToken;
 };
 
 export default {
@@ -110,4 +163,6 @@ export default {
   saveToken,
   generateAuthTokens,
   verifyToken,
+  generateForgotPasswordToken,
+  generateVerifyEmailToken,
 };

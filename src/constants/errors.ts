@@ -36,6 +36,16 @@ const ERRORS = {
       code: 1004,
       message: 'Incorrect email or password!',
     } as IError,
+    EMAIL_NOT_FOUND: {
+      code: 1007,
+      message: 'No users found with this email!',
+    } as IError,
+  },
+  USER: {
+    NOT_FOUND: {
+      code: 1008,
+      message: 'User not found!',
+    } as IError,
   },
 };
 export default ERRORS;

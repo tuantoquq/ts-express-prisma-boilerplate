@@ -15,6 +15,17 @@ const envVarsSchema = Joi.object()
     JWT_REFRESH_EXPIRATION_MINUTES: Joi.number()
       .default(86400)
       .description('minutes after which refresh tokens expire'),
+    VERIFY_EMAIL_EXPIRATION_MINUTES: Joi.number()
+      .default(10)
+      .description('minutes after which verify email token expires'),
+    RESET_PASSWORD_EXPIRATION_MINUTES: Joi.number()
+      .default(10)
+      .description('minutes after which reset password token expires'),
+    SMTP_HOST: Joi.string().description('server that will send the emails'),
+    SMTP_PORT: Joi.number().description('port to connect to the email server'),
+    SMTP_USERNAME: Joi.string().description('username for email server'),
+    SMTP_PASSWORD: Joi.string().description('password for email server'),
+    CLIENT_URL: Joi.string().description('client url'),
   })
   .unknown();
 
@@ -33,5 +44,18 @@ export default {
     secret: envVars.JWT_SECRET,
     accessExpirationMinutes: envVars.JWT_ACCESS_EXPIRATION_MINUTES,
     refreshExpirationMinutes: envVars.JWT_REFRESH_EXPIRATION_MINUTES,
+    resetPasswordExpirationMinutes: envVars.RESET_PASSWORD_EXPIRATION_MINUTES,
+    verifyEmailExpirationMinutes: envVars.VERIFY_EMAIL_EXPIRATION_MINUTES,
   },
+  email: {
+    smtp: {
+      host: envVars.SMTP_HOST,
+      port: envVars.SMTP_PORT,
+      auth: {
+        user: envVars.SMTP_USERNAME,
+        pass: envVars.SMTP_PASSWORD,
+      },
+    },
+  },
+  clientUrl: envVars.CLIENT_URL,
 };

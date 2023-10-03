@@ -1,11 +1,9 @@
 import { ErrorRequestHandler } from 'express';
 import { BaseException } from '../errors/api-error';
 import httpStatus from 'http-status';
-import logger from '../configs/logger';
 import { buildResponse } from '../utils/common';
 
 export const errorHandler: ErrorRequestHandler = (err, req, res) => {
-  logger.error(err);
   let error = err;
   if (!(error instanceof BaseException)) {
     const statusCode = error.statusCode || httpStatus.INTERNAL_SERVER_ERROR;

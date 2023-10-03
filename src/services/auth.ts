@@ -1,7 +1,7 @@
 import { TokenType, User } from '@prisma/client';
 import { LoginDto } from '../dtos/auth';
-import { userService } from '.';
-import { comparePassword } from '../utils/encryption';
+import { tokenService, userService } from '.';
+import { comparePassword, hashPassword } from '../utils/encryption';
 import { BaseException } from '../errors/api-error';
 import httpStatus from 'http-status';
 import ERRORS from '../constants/errors';
@@ -54,7 +54,57 @@ const logout = async (refreshToken: string): Promise<void> => {
   });
 };
 
+/**
+ * Confirm reset password
+ * @param {string} tokenReset
+ * @param {string} newPassword
+ * @returns {Promise<void>}
+ */
+const confirmResetPassword = async (tokenReset: string, newPassword: string): Promise<void> => {
+  const resetPasswordToken = await tokenService.verifyToken(tokenReset, TokenType.PASSWORD_RESET);
+  const user = await userService.getUserById(resetPasswordToken.userId);
+  if (!user) {
+    throw new BaseException(httpStatus.FORBIDDEN, ERRORS.COMMON.FORBIDDEN);
+  }
+  const encryptPassword = await hashPassword(newPassword);
+  await userService.updateUserById(user.id, {
+    password: encryptPassword,
+  });
+  await prisma.token.deleteMany({
+    where: {
+      userId: user.id,
+      type: TokenType.PASSWORD_RESET,
+    },
+  });
+};
+
+/**
+ * Confirm verify email
+ * @param {string} tokenVerify
+ * @returns {Promise<void>}
+ */
+const confirmVerifyEmail = async (tokenVerify: string): Promise<void> => {
+  const verifyEmailToken = await tokenService.verifyToken(
+    tokenVerify,
+    TokenType.EMAIL_VERIFICATION,
+  );
+  const user = await userService.getUserById(verifyEmailToken.userId);
+  if (!user) {
+    throw new BaseException(httpStatus.FORBIDDEN, ERRORS.COMMON.FORBIDDEN);
+  }
+  await userService.updateUserById(user.id, {
+    isEmailVerified: true,
+  });
+  await prisma.token.deleteMany({
+    where: {
+      userId: user.id,
+      type: TokenType.EMAIL_VERIFICATION,
+    },
+  });
+};
 export default {
   loginWithEmailAndPassword,
   logout,
+  confirmResetPassword,
+  confirmVerifyEmail,
 };

@@ -1,3 +1,4 @@
+import envConfig from '../configs/env-config';
 import ERRORS from '../constants/errors';
 import { IError, IResponse } from '../types/response';
 
@@ -22,6 +23,9 @@ const buildResponse = <T>(data: T, error?: IError) => {
     errorCode: error?.code || ERRORS.SUCCESS.code,
     message: error?.message || ERRORS.SUCCESS.message,
   };
+  if (error && error.code !== ERRORS.SUCCESS.code && envConfig.env === 'production') {
+    return dataResponse;
+  }
   if (data && JSON.stringify(data) !== '{}') {
     dataResponse.data = data;
   }

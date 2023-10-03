@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import prisma from '../prisma-client';
 import { BaseException } from '../errors/api-error';
 import httpStatus from 'http-status';
@@ -73,4 +73,31 @@ const getUserByEmail = async <Key extends keyof User>(
   }) as Promise<Pick<User, Key> | null>;
 };
 
-export default { createUser, getUserById, getUserByEmail };
+/**
+ * Update user by id
+ * @param {Number} id user id
+ * @param {Object} data data to update
+ * @returns {Promise<User>}
+ */
+const updateUserById = async <Key extends keyof User>(
+  userId: number,
+  data: Prisma.UserUpdateInput,
+  key: Key[] = ['id', 'email', 'name', 'role'] as Key[],
+): Promise<Pick<User, Key> | null> => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new BaseException(httpStatus.NOT_FOUND, ERRORS.USER.NOT_FOUND);
+  }
+  if (data.email && (await getUserByEmail(data.email as string))) {
+    throw new BaseException(httpStatus.BAD_REQUEST, ERRORS.AUTH.EMAIL_EXISTED);
+  }
+  const updateUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data,
+    select: key.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
+  });
+  return updateUser as Pick<User, Key> | null;
+};
+export default { createUser, getUserById, getUserByEmail, updateUserById };
