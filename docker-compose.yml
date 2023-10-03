@@ -18,23 +18,23 @@ services:
     networks:
       - node-network
   
-  # ts-express:
-  #   build: 
-  #     context: .
-  #     dockerfile: ./compose/express/Dockerfile
-  #     target: development
-  #   ports:
-  #     - 3000:3000
-  #   env_file:
-  #     - ./compose/express/.env
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   volumes:
-  #     - .:/app
-  #     - /app/node_modules
-  #   networks:
-  #     - node-network
+  ts-express:
+    build: 
+      context: .
+      dockerfile: ./compose/express/Dockerfile
+      target: production
+    ports:
+      - 3000:3000
+    env_file:
+      - ./compose/express/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # volumes: # for development only
+    #   - .:/app
+    #   - /app/node_modules
+    networks:
+      - node-network
   
 volumes:
   db-data:
