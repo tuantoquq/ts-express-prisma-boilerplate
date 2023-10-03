@@ -1,0 +1,45 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres
+    restart: always
+    env_file:
+      - ./compose/postgres/.env
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - node-network
+  
+  # ts-express:
+  #   build: 
+  #     context: .
+  #     dockerfile: ./compose/express/Dockerfile
+  #     target: development
+  #   ports:
+  #     - 3000:3000
+  #   env_file:
+  #     - ./compose/express/.env
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - node-network
+  
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  node-network:
+    driver: bridge
